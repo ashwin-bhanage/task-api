@@ -1,0 +1,60 @@
+"""
+Created the Database structure and works for creation of tables for the database.
+"""
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Text
+from datetime import datetime
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+db_url = "sqlite:///./tasks.db"
+
+engine = create_engine(db_url, connect_args={"check_same_thread": False})
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+class User(Base):
+    """
+    SQLAlchemy model for users table
+    """
+    # Tablename
+    __tablename__ = "users"
+
+    # Columns
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String, unique=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    tasks = relationship("Task", back_populates="owner")
+
+class Task(Base):
+    """
+    SQLAlchemy model for tasks table
+    """
+    # Tablename
+    __tablename__ = "tasks"
+
+    # Columns
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    title = Column(String(200))
+    description = Column(Text, nullable=True)
+    status = Column(String, default="pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User", back_populates="tasks")
+
+def create_tables():
+    Base.metadata.create_all(bind=engine)

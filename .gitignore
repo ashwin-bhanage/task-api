@@ -9,3 +9,6 @@ venv/
 
 # Environments
 .env
+
+#Folders
+tests/

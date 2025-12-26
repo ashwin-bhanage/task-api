@@ -2,8 +2,9 @@
 Create models for UserData and UserResponse based on pydantic models
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
+from typing import Literal
 
 class UserCreate(BaseModel):
     name: str
@@ -16,5 +17,40 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        # Helps to allow conversion from SQLAlchemy model
-        from_attritubes = True
+        # This tells Pydantic: "If you see a database object,
+        # just grab the attributes like .id and .title
+        from_attributes = True
+
+"""
+Task Create models -> userId, task, description, status(pending, completed, inprogress)
+Note description is optional, and status is pending by default
+
+Task Reponse models -> id, userID, title, description, status, created, updated
+"""
+
+class TaskCreate(BaseModel):
+    user_id: int
+    title: str
+    description: str | None = None
+    status: Literal["pending", "completed", "in_progress"] = "pending"
+
+    @field_validator("title")
+    def title_length_validator(cls, value):
+        if not value or not value.strip():
+            raise ValueError("Title cannot be empty or whitespace only")
+        if len(value) > 200:
+            raise ValueError("Title cannot exceed 200 characters")
+        return value.strip()
+
+
+class TaskResponse(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    description: str | None = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -59,3 +59,21 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 
     # 4. Return task
     return db_task
+
+
+# List tasks
+@app.get("/tasks", response_model=list[TaskResponse])
+def list_tasks(user_id: int | None = None, db: Session = Depends(get_db)):
+    query = db.query(Task)
+    if user_id is not None:
+        query = query.filter(Task.user_id == user_id)
+    tasks = query.all()
+    return tasks
+
+# Get the task by id
+@app.get("/tasks/{task_id}", response_model=TaskResponse)
+def get_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task

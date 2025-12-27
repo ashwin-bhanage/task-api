@@ -1,7 +1,7 @@
 from fastapi import FastAPI, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db, User, Task
-from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse
+from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate
 
 app = FastAPI(title="Task Management API")
 
@@ -77,3 +77,35 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+# Update the task
+@app.patch("/tasks/{task_id}", response_model=TaskResponse)
+def update_task(task_id: int, task_update: TaskUpdate, db: Session = Depends(get_db)):
+    # 1. Check if task exist
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    # 2. Update task
+    update_data = task_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(task, key, value)
+
+    # 3. Add to database
+    db.commit()
+    db.refresh(task)  # Gets the ID and created_at from DB
+
+    # 4. Return task
+    return task
+
+# To delete a task
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db.delete(task)
+    db.commit()
+    return
+

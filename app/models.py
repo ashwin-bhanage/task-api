@@ -54,3 +54,18 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Taskdelete --> title, desc, status, fiell_valid for title
+class TaskUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    status: Literal["pending", "completed", "in_progress"] | None = None
+
+    @field_validator("title")
+    def title_not_empty(cls, value):
+        if value is not None:
+            if not value.strip():
+                raise ValueError("Title cannot be empty or whitespace only")
+            if len(value) > 200:
+                raise ValueError("Title cannot exceed 200 characters")
+        return value

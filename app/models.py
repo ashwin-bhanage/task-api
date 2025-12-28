@@ -10,6 +10,12 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
 
+    @field_validator("name")
+    def name_not_empty(cls, value):
+        if not value or not value.strip():
+            raise ValueError("Name cannot be empty or whitespace only")
+        return value.strip()
+
 class UserResponse(BaseModel):
     id: int
     name: str

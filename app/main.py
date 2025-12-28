@@ -2,8 +2,14 @@ from fastapi import FastAPI, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db, User, Task
 from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate
+# for the Error handling
+from sqlalchemy.exc import IntegrityError
 
-app = FastAPI(title="Task Management API")
+app = FastAPI(
+    title="Task Management API",
+    description="Multi-user task management system with RESTful endpoints",
+    version="1.0.0"
+)
 
 @app.get("/")
 def root():
@@ -11,19 +17,19 @@ def root():
 
 @app.post("/users", response_model=UserResponse, status_code= status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # 1. Check if email exists
-    if db.query(User).filter(User.email == user.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    # 2. Create new user
+    # 1. Create new user
     db_user = User(name = user.name, email = user.email)
 
-    # 3. Add to database
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)  # Gets the ID and created_at from DB
+    # 2. Add to database
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)  # Gets the ID and created_at from DB
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="User already exists")
 
-    # 4. Return user
+    # 3. Return user
     return db_user
 
 
@@ -109,3 +115,12 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
     db.commit()
     return
 
+# Delete user
+@app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user)
+    db.commit()
+    return

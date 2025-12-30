@@ -36,8 +36,8 @@ class User(Base):
     email = Column(String, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    projects = relationship("Project", back_populates="creator")
     tasks = relationship("Task", back_populates="owner")
+    projects = relationship("Project", back_populates="creator")
 
 # Add Project class including the tablename as 'projects' and attributes
 # id, name created_by, created_at, with relationships to User as creator and Task as tasks
@@ -50,7 +50,7 @@ class Project(Base):
 
     # Columns
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
+    name = Column(String, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -69,7 +69,7 @@ class Task(Base):
     # Columns
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    title = Column(String(200))
+    title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -77,7 +77,7 @@ class Task(Base):
 
     # attributes added for the projects and owner as creator
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable = False)
-    priority = Column(String, default="low") # "low", "medium", "high"
+    priority = Column(String, default="Normal") # "Low", "Normal", "High"
     due_date = Column(DateTime)
 
     # Relationships

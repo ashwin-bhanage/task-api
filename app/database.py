@@ -36,7 +36,28 @@ class User(Base):
     email = Column(String, unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    projects = relationship("Project", back_populates="creator")
     tasks = relationship("Task", back_populates="owner")
+
+# Add Project class including the tablename as 'projects' and attributes
+# id, name created_by, created_at, with relationships to User as creator and Task as tasks
+class Project(Base):
+    """
+    SQLAlchemy model for projects table
+    """
+    # Tablename
+    __tablename__ = "projects"
+
+    # Columns
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    creator = relationship("User", back_populates="projects")
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+
 
 class Task(Base):
     """
@@ -54,6 +75,13 @@ class Task(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # attributes added for the projects and owner as creator
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable = False)
+    priority = Column(String, default="low") # "low", "medium", "high"
+    due_date = Column(DateTime)
+
+    # Relationships
+    project = relationship("Project", back_populates="tasks")
     owner = relationship("User", back_populates="tasks")
 
 def create_tables():

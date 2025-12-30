@@ -12,3 +12,4 @@ venv/
 
 #Folders
 tests/
+migrate_db.py

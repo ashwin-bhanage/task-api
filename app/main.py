@@ -1,7 +1,8 @@
 from fastapi import FastAPI, status, HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db, User, Task
-from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate
+from app.database import get_db, User, Task, Project
+from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate, ProjectCreate, ProjectResponse
+
 # for the Error handling
 from sqlalchemy.exc import IntegrityError
 
@@ -55,8 +56,21 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Check if task is ther in project
+    project = db.query(Project).filter(Project.id == task.project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     # 2. Create new task
-    db_task = Task(user_id = task.user_id, title = task.title, description = task.description, status = task.status)
+    db_task = Task(
+        user_id = task.user_id,
+        project_id = task.project_id,
+        title = task.title,
+        description = task.description,
+        status = task.status,
+        priority = task.priority,
+        due_date = task.due_date
+        )
 
     # 3. Add to database
     db.add(db_task)
@@ -122,5 +136,49 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     db.delete(user)
+    db.commit()
+    return
+
+
+# Create project
+@app.post("/projects", response_model=ProjectResponse, status_code= status.HTTP_201_CREATED)
+def create_project(project: ProjectCreate, user_id: int, db: Session = Depends(get_db)):
+    # 1. Check if user exists
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 2. Create new project
+    db_project = Project(name = project.name, created_by = user_id)
+
+    # 3. Add to database
+    db.add(db_project)
+    db.commit()
+    db.refresh(db_project)  # Gets the ID and created_at from DB
+
+    # 4. Return project
+    return db_project
+
+# get project by id
+@app.get("/projects/{project_id}", response_model=ProjectResponse)
+def get_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+# list all projects
+@app.get("/projects", response_model=list[ProjectResponse])
+def list_projects(db: Session = Depends(get_db)):
+    projects = db.query(Project).all()
+    return projects
+
+# delete the projects
+@app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    db.delete(project)
     db.commit()
     return

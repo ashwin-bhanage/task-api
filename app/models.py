@@ -6,6 +6,30 @@ from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
 from typing import Literal
 
+# Projects schemas
+class ProjectCreate(BaseModel):
+    name: str
+
+    @field_validator("name")
+    def name_not_empty(cls, value):
+        if not value or not value.strip():
+            raise ValueError("Project name cannot be empty")
+        if len(value) > 100:
+            raise ValueError("Project name cannot exceed 100 characters")
+        return value.strip()
+
+
+class ProjectResponse(BaseModel):
+    id: int
+    name: str
+    created_by: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
@@ -36,9 +60,12 @@ Task Reponse models -> id, userID, title, description, status, created, updated
 
 class TaskCreate(BaseModel):
     user_id: int
+    project_id: int
     title: str
     description: str | None = None
     status: Literal["pending", "completed", "in_progress"] = "pending"
+    priority: Literal["Normal", "High", "Low"] = "Normal"
+    due_date: datetime | None = None
 
     @field_validator("title")
     def title_length_validator(cls, value):
@@ -52,11 +79,14 @@ class TaskCreate(BaseModel):
 class TaskResponse(BaseModel):
     id: int
     user_id: int
+    project_id: int
     title: str
     description: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime
+    priority: str
+    due_date: datetime | None = None
 
     class Config:
         from_attributes = True

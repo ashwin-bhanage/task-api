@@ -96,6 +96,8 @@ class TaskUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     status: Literal["pending", "completed", "in_progress"] | None = None
+    priority: Literal["Normal", "High", "Low"] | None = None
+    due_date: datetime | None = None
 
     @field_validator("title")
     def title_not_empty(cls, value):

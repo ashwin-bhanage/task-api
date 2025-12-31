@@ -13,3 +13,4 @@ venv/
 #Folders
 tests/
 migrate_db.py
+workspace.code-workspace

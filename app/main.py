@@ -83,10 +83,18 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 
 # List tasks
 @app.get("/tasks", response_model=list[TaskResponse])
-def list_tasks(user_id: int | None = None, db: Session = Depends(get_db)):
+def list_tasks(
+    user_id: int | None = None,
+    project_id: int | None = None,
+    db: Session = Depends(get_db)
+    ):
     query = db.query(Task)
     if user_id is not None:
         query = query.filter(Task.user_id == user_id)
+
+    if project_id is not None:
+        query = query.filter(Task.project_id == project_id)
+
     tasks = query.all()
     return tasks
 

@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 app = FastAPI(
     title="Task Management API",
     description="Multi-user task management system with RESTful endpoints",
-    version="2.0.0"
+    version="1.2.0"
 )
 
 @app.get("/")

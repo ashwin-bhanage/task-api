@@ -2,6 +2,7 @@ from fastapi import FastAPI, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db, User, Task, Project
 from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate, ProjectCreate, ProjectResponse
+from typing import Literal
 
 # for the Error handling
 from sqlalchemy.exc import IntegrityError
@@ -9,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 app = FastAPI(
     title="Task Management API",
     description="Multi-user task management system with RESTful endpoints",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 @app.get("/")
@@ -86,6 +87,7 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 def list_tasks(
     user_id: int | None = None,
     project_id: int | None = None,
+    status: Literal["pending", "completed", "in_progress"] | None = None,
     db: Session = Depends(get_db)
     ):
     query = db.query(Task)
@@ -94,6 +96,9 @@ def list_tasks(
 
     if project_id is not None:
         query = query.filter(Task.project_id == project_id)
+
+    if status is not None:
+        query = query.filter(Task.status == status)
 
     tasks = query.all()
     return tasks

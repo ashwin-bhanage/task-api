@@ -3,15 +3,26 @@ from sqlalchemy.orm import Session
 from app.database import get_db, User, Task, Project
 from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate, ProjectCreate, ProjectResponse
 from typing import Literal
-
+from fastapi.middleware.cors import CORSMiddleware
 # for the Error handling
 from sqlalchemy.exc import IntegrityError
 
 app = FastAPI(
     title="Task Management API",
     description="Multi-user task management system with RESTful endpoints",
-    version="1.2.0"
+    version="2.0.0"
 )
+
+# CORS for backend to frontend connections
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # FIXED
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 @app.get("/")
 def root():
@@ -88,6 +99,7 @@ def list_tasks(
     user_id: int | None = None,
     project_id: int | None = None,
     status: Literal["pending", "completed", "in_progress"] | None = None,
+    # priority: Literal["Normal", "High", "Low"] | None = None,
     db: Session = Depends(get_db)
     ):
     query = db.query(Task)
@@ -99,6 +111,9 @@ def list_tasks(
 
     if status is not None:
         query = query.filter(Task.status == status)
+
+    # if priority is not None:
+    #     query = query.filter(Task.priority == priority)
 
     tasks = query.all()
     return tasks

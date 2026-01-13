@@ -14,3 +14,6 @@ venv/
 tests/
 migrate_db.py
 workspace.code-workspace
+
+# Files
+cookies.txt

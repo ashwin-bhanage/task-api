@@ -3,7 +3,7 @@ Created the Database structure and works for creation of tables for the database
 """
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Text
 from datetime import datetime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -34,6 +34,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     email = Column(String, unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
 
     tasks = relationship("Task", back_populates="owner")

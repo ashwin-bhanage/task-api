@@ -6,7 +6,48 @@ from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
 from typing import Literal
 
-# Projects schemas
+# ========== Auth Schemas ==============
+class UserRegister(BaseModel):
+    """Schema for user registration"""
+    name: str
+    email: EmailStr
+    password: str
+
+    @field_validator("name")
+    def name_not_empty(cls, value):
+        if not value or not value.strip():
+            raise ValueError("Name cannot be empty or whitespace only")
+        return value.strip()
+
+    @field_validator("password")
+    def password_strength(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return value
+
+class UserLogin(BaseModel):
+    """Schema for user login"""
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    """Schema for token for access"""
+    access_token: str
+    token_type: str
+
+class UserProfile(BaseModel):
+    """Schema for current user profile"""
+    id: int
+    name: str
+    email: EmailStr
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ==========================================
+
+# ============== Projects schemas =================
 class ProjectCreate(BaseModel):
     name: str
 
@@ -28,17 +69,25 @@ class ProjectResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
+# =============================================
+# =============== User Schemas ===============
 
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
+    password : str
 
     @field_validator("name")
     def name_not_empty(cls, value):
         if not value or not value.strip():
             raise ValueError("Name cannot be empty or whitespace only")
         return value.strip()
+
+    @field_validator("password")
+    def password_strength(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        return value
 
 class UserResponse(BaseModel):
     id: int

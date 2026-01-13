@@ -1,12 +1,19 @@
-from fastapi import FastAPI, status, HTTPException, Depends
+from fastapi import FastAPI, status, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from app.database import get_db, User, Task, Project
 from app.models import UserCreate, UserResponse, TaskCreate, TaskResponse, TaskUpdate, ProjectCreate, ProjectResponse
 from typing import Literal
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta
 # for the Error handling
 from sqlalchemy.exc import IntegrityError
 
+# from auth and token authentication
+from app.auth import get_current_user
+from app.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.models import UserProfile, UserLogin, UserRegister, Token
+
+# Entry point
 app = FastAPI(
     title="Task Management API",
     description="Multi-user task management system with RESTful endpoints",
@@ -22,27 +29,112 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ========= auth routes ===========
+@app.post("/auth/register", response_model=UserProfile, status_code= status.HTTP_201_CREATED)
+def register_user(user: UserRegister, db: Session = Depends(get_db)):
+    """Register a new user"""
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException (
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already exists"
+        )
+
+    # create user with hash password
+    hashed_password = get_password_hash(user.password)
+    new_user = User(
+        name = user.name,
+        email = user.email,
+        password_hash = hashed_password
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
+@app.post("/auth/login")
+def login(response: Response, crendentials: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == crendentials.email).first()
+
+    if not user or not verify_password(crendentials.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password"
+        )
+
+
+    # create access token
+    access_token = create_access_token(
+        data={"sub": user.id},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    # set HTTP-only cookies
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False
+    )
+
+    return {
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+    }
+
+@app.post("/auth/logout")
+def logout(response: Response):
+    response.delete_cookie(key="access_token")
+    return {"message": "Logout successful"}
+
+
+@app.get("/auth/me", response_model= UserProfile)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    """Get the authenticated user's profile"""
+    return current_user
 
 
 @app.get("/")
 def root():
     return {"message": "Welcome to Task API."}
 
-@app.post("/users", response_model=UserResponse, status_code= status.HTTP_201_CREATED)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # 1. Create new user
-    db_user = User(name = user.name, email = user.email)
+@app.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(
+    user: UserCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # ADD THIS - requires auth
+):
+    """Create a new user (requires authentication)"""
+    # Check if email exists
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    # 2. Add to database
+    # Hash password
+    hashed_password = get_password_hash(user.password)
+
+    db_user = User(
+        name=user.name,
+        email=user.email,
+        password_hash=hashed_password
+    )
+
     try:
         db.add(db_user)
         db.commit()
-        db.refresh(db_user)  # Gets the ID and created_at from DB
+        db.refresh(db_user)
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-    # 3. Return user
     return db_user
 
 

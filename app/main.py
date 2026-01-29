@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, status, HTTPException, Depends, Response
 from sqlalchemy.orm import Session
 from app.database import get_db, User, Task, Project
@@ -7,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 # for the Error handling
 from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # from auth and token authentication
 from app.auth import get_current_user
@@ -20,10 +24,13 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Get frontend URL from environment
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
 # CORS for backend to frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # FIXED
+    allow_origins=[FRONTEND_URL],  # FIXED
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

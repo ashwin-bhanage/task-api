@@ -1,15 +1,29 @@
 """
 Created the Database structure and works for creation of tables for the database.
 """
+import os
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Text
 from datetime import datetime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
-db_url = "sqlite:///./tasks.db"
+# Load environment variables
+load_dotenv()
 
-engine = create_engine(db_url, connect_args={"check_same_thread": False})
+# Get database URL from environment variable
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Handle SQLite for local development
+if DATABASE_URL is None or DATABASE_URL.startswith("sqlite"):
+    DATABASE_URL = "sqlite:///./tasks.db"
+    engine = create_engine(
+        DATABASE_URL, connect_args={"check_same_thread": False}
+    )
+else:
+    # PostgreSQL for production
+    engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

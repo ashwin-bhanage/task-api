@@ -1,15 +1,19 @@
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT Configuration
-SECRET_KEY = "3e3771322ca9e1cdf52d0791e427fdaa80d21d814ef208ab77a0bfe2ef5469ad"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60*24*7           #for 7days
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key-only-for-development")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))          #for 7days
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -46,6 +50,5 @@ def decode_access_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except JWTError as e:
-        print(f"JWT Decode Error: {e}") # This will show in your terminal
+    except JWTError: # This will show in your terminal
         return None

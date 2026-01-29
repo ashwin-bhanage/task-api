@@ -17,3 +17,10 @@ workspace.code-workspace
 
 # Files
 cookies.txt
+
+*.pyc
+*.log
+.pytest_cache/
+instance/
+.vscode/
+.idea/

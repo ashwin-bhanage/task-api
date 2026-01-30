@@ -30,7 +30,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 # CORS for backend to frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],  # FIXED
+    allow_origins=["*"],  # FIXED
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

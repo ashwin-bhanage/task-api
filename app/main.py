@@ -30,7 +30,11 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 # CORS for backend to frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # FIXED
+    allow_origins=[
+        "http://localhost:5173",  # Local development
+        "https://ergo-task-board.vercel.app",  # Production frontend - UPDATE THIS
+        "https://*.vercel.app"  # Allow all Vercel preview deployments
+    ],  # FIXED
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
